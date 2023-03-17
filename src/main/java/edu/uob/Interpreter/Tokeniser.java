@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.regex.Pattern;
+import java.util.regex.Matcher;
 
 public class Tokeniser {
 //    String command;
@@ -16,12 +17,72 @@ public class Tokeniser {
         tokenInfos = new LinkedList<TokenInfo>();
         tokens = new LinkedList<Token>();
 
+        /* --- define tokens information --- */
+
+        // Command type (a list of special keywords, so have just placed them all into a single regular expression)
+        addToken("\\bUSE\\b|\\bCREATE\\b|\\bDROP\\b|\\bALTER\\b|\\bINSERT\\b|\\bSELECT\\b|\\bUPDATE\\b|\\bDELETE\\b" +
+                "|\\bJOIN\\b", TokenType.CMD);
+
+        // Keywords (Unsure how extensive this list needs to be, but for now will just keep them all in one regular expression)
+        addToken("\\bAND\\b|\\bDROP\\b|\\bDATABASE\\b|\\bDROP\\b|\\bFROM\\b|\\bIN\\b|\\bINTO\\b|\\bNULL\\b|\\bON\\b" +
+                "|\\bOR\\b|\\bSET\\b|\\bTABLE\\b|\\bVALUES\\b|\\bWHERE\\b", TokenType.KEYWORD);
+
+        // Operations (in a list)
+        addToken(("==|<=|>=|!=|<|>|=|\\bLIKE\\b"), TokenType.OPERATOR); // Operation
+
+        // Literals (expressions for are quite messy so separating into String, number, character and boolean)
+        addToken("'([^']|\\.)*'", TokenType.STRING); // String literal \\"([^\\"]|\\.)*\\"
+        addToken("[+-]?([0-9]*[.])?[0-9]+", TokenType.NUMBER); // Number literal
+        addToken("\\bTRUE\\b|\\bFALSE\\b", TokenType.Boolean); // Boolean literal
+        addToken("\\b[a-zA-Z]\\b", TokenType.Character); // Character literal (letters)
+        addToken("[!#$%&()*+,-\\./:;<=>?@[/]^_`{~}]", TokenType.Character); // Character literal (special characters)
+        // addToken("\\bNULL\\b", TokenType.LIT); // NULL literal
+
+        // Separator
+        addToken(("\\s+"), TokenType.Separator);
+
+        // Identifiers (Basically any word, so has the lowest precedence)
+        addToken("\\b([a-zA-Z0-9])*\\b", TokenType.IDENTIFIER);
+
     }
 
     public void addToken(String regex,TokenType token) {
         tokenInfos.add(
         new TokenInfo(
-        Pattern.compile("^("+regex+")"),token));
+        Pattern.compile("^("+regex+")",Pattern.CASE_INSENSITIVE),token));
+    }
+
+
+    public boolean tokenize(String command) {
+        if(command != null && !command.isEmpty()) {
+            String s = command.trim();//.strip();
+            while(!s.isEmpty()) {// && !s.equals("")){
+                boolean match = false;
+                for(TokenInfo info : tokenInfos) {
+                    Matcher m = info.regex.matcher(s);
+                    if(m.find()) {
+                        match = true;
+                        String tok = m.group().trim();
+                        tokens.add(new Token(info.token,tok));
+
+                        s = m.replaceFirst("").trim();//.strip();
+                        if (tokens.size() > command.length()) {
+                            return false;
+                        }
+//                        if(!info.token.equals(TokenType.Separator)) {
+//                            tokens.add(new Token(info.token,tok));
+//                        }
+//                        break;
+                    }
+                }
+                if(!match) return false;
+            }
+            return true;
+        }
+    }
+
+    public LinkedList<Token> getTokens(){
+        return tokens;
     }
 
 //    public Tokeniser(String command){

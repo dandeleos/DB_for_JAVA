@@ -1,6 +1,8 @@
 package edu.uob;
 
-import edu.uob.Tokeniser;
+import edu.uob.Interpreter.Tokeniser;
+import edu.uob.Interpreter.Parser;
+
 
 import java.io.*;
 import java.io.BufferedReader;
@@ -24,6 +26,8 @@ public class DBServer {
     private File dataBasePath;
     private File useDataBasePath;
 
+    private static final String METADATA_FILENAME = "metadata.data";
+
     public static void main(String args[]) throws IOException {
         DBServer server = new DBServer();
         server.blockingListenOn(8888);
@@ -37,9 +41,12 @@ public class DBServer {
         File BasePath = new File(storageFolderPath);
         this.dataBasePath = BasePath;
         this.useDataBasePath = null;
+
+        File metadata = new File(METADATA_FILENAME);
         try {
             // Create the database storage folder if it doesn't already exist !
             Files.createDirectories(Paths.get(storageFolderPath));
+            metadata.createNewFile()
         } catch(IOException ioe) {
             System.out.println("Can't seem to create database storage folder " + storageFolderPath);
         }
